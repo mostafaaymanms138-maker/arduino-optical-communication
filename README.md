@@ -64,7 +64,7 @@ This describes the software flow. The physical transmitter/receiver arrangement 
 ## Known limitations and testing status
 
 - **Hardware testing:** End-to-end operation with an Arduino and optical circuit is not currently verified.
-- **Fan output:** The sketch calls `analogWrite()` on D7. D7 is not a hardware PWM pin on a standard Arduino Uno, so this pin does not provide normal variable-speed PWM. Review the pin assignment and driver circuit if variable-speed fan control is required.
+- **Fan output:** The sketch uses D7 for on/off control. D7 is not a hardware PWM pin on a standard Arduino Uno, so variable-speed control requires moving the fan control to a PWM-capable pin and updating the wiring.
 - **Encryption:** The `encrypt` and `decrypt` functions leave values unchanged; they should be treated as placeholders, not security features.
 - **Circuit details:** The source pin assignments are available, but a verified wiring diagram and complete component specifications are not included here.
 
@@ -72,11 +72,11 @@ This describes the software flow. The physical transmitter/receiver arrangement 
 
 - Verify the wiring and test transmission and reception on the target hardware.
 - Add a circuit diagram and document component values and receiver thresholds.
-- Move the fan control to a PWM-capable Uno pin and confirm the required driver circuitry.
+- Add variable-speed fan control on a PWM-capable Uno pin and document the required driver circuit.
 - Add error detection, such as a checksum, and define how malformed or incomplete frames are handled.
 - Document the seven payload fields and their value ranges directly alongside the frame definition.
 - Add automated checks for frame construction and parsing where practical.
 
 ## Repository contents
 
-The Arduino sketch is the source of the project. Open it in the Arduino IDE, select **Arduino Uno**, and review the pin mapping and circuit requirements before connecting hardware.
+The sketch is named `arduino-optical-communication.ino` to match the repository folder. Open it in the Arduino IDE, select **Arduino Uno**, and review the pin mapping and circuit requirements before connecting hardware.
