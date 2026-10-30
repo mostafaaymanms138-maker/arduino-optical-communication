@@ -1,7 +1,13 @@
 /*
   Arduino Optical Communication System
   Arduino Uno sketch for framed optical message transmission and reception.
-  The physical circuit has not been independently verified.
+
+  Based on "Communications v6", starter code provided by UWE Bristol
+  (Computer Systems Architecture). Adapted by Mostafa Abdelkarim: added tilt,
+  potentiometer and joystick inputs with their outputs, moved the buzzer to
+  pin 11, tuned the receive threshold to 900, and added a buffer bounds check.
+
+  Developed for UWE Bristol coursework and demonstrated in December 2025.
 */
 
 #define STX 0x70
@@ -14,10 +20,10 @@ char rxBuffer[7];
 char rxButton, rxTilt, rxPot, rxA, rxB, rxC, rxD;
 int  rx_index = 0;
 
-// --- UPDATED 7-SEGMENT PINS (YOUR REAL CIRCUIT) ---
+// 7-segment display pins
 int segmentPins[] = {5, 6, 9, 10, 12, 13, A2};
 
-// SAME DIGITS
+// Segment patterns for digits 0 to 7
 byte digits[8][7] = {
   {1,1,1,1,1,1,0}, // 0
   {0,1,1,0,0,0,0}, // 1
@@ -54,14 +60,14 @@ char decrypt(char in_char);
 
 void setup()
 {
-  // === UPDATED INPUT PINS ===
-  pinMode(8, INPUT_PULLUP);  // Button (was D2)
-  pinMode(2, INPUT_PULLUP);  // Tilt (was D5)
+  // Input pins
+  pinMode(8, INPUT_PULLUP);  // Button
+  pinMode(2, INPUT_PULLUP);  // Tilt switch
 
-  // === UPDATED OUTPUT PINS ===
-  pinMode(11, OUTPUT);  // Buzzer (was D4)
-  pinMode(4, OUTPUT);   // Tilt LED (was A4)
-  pinMode(7, OUTPUT);   // Fan PWM (was D6)
+  // Output pins
+  pinMode(11, OUTPUT);  // Buzzer
+  pinMode(4, OUTPUT);   // Tilt LED
+  pinMode(7, OUTPUT);   // Fan on/off (D7 is not PWM)
   pinMode(3, OUTPUT);   // TX LED
 
   Serial.begin(9600);
@@ -74,15 +80,15 @@ void setup()
 
 void readInputs()
 {
-  // Button + Tilt (UPDATED PINS)
+  // Button and tilt switch
   txButton = (digitalRead(8) == LOW) ? 1 : 0;
   txTilt   = (digitalRead(2) == LOW) ? 1 : 0;
 
-  // Potentiometer 0..7 (NO LOGIC CHANGE)
+  // Potentiometer 0..7
   int potValue = analogRead(A1);
   txPot = map(potValue, 0, 1023, 0, 7);
 
-  // Joystick on A4 (UPDATED PIN)
+  // Joystick on A4
   int joyValue = analogRead(A4);
   txA = map(joyValue, 0, 1023, 0, 127);
 
@@ -94,10 +100,10 @@ void readInputs()
 
 void writeOutputs()
 {
-  // Buzzer mirrors Button (UPDATED PIN)
+  // Buzzer mirrors button
   digitalWrite(11, (rxButton != 0) ? HIGH : LOW);
 
-  // Tilt LED mirrors Tilt (UPDATED PIN)
+  // Tilt LED mirrors tilt switch
   digitalWrite(4, (rxTilt != 0) ? HIGH : LOW);
 
   // D7 is not PWM-capable on the Uno; use it for fan on/off control.
@@ -109,6 +115,7 @@ void writeOutputs()
     digitalWrite(segmentPins[i], digits[d][i]);
 }
 
+// Placeholders from the starter code: no real encryption
 char encrypt(char x){return x;}
 char decrypt(char x){return x;}
 
@@ -152,19 +159,19 @@ void txChar()
     {
       case 0:
         chr = encrypt(getTxChar());
-        digitalWrite(3, HIGH);
+        digitalWrite(3, HIGH);  // Start bit
         tx_state++;
         break;
 
       case 1: case 2: case 3: case 4:
       case 5: case 6: case 7:
-        digitalWrite(3, (chr & 0x40) ? HIGH : LOW);
+        digitalWrite(3, (chr & 0x40) ? HIGH : LOW);  // Data bits
         chr <<= 1;
         tx_state++;
         break;
 
       case 8:
-        digitalWrite(3, HIGH);
+        digitalWrite(3, HIGH);  // Stop bit
         tx_state++;
         break;
 
@@ -224,7 +231,7 @@ void rxChar()
               break;
 
             default:
-              if (rx_index < 7)
+              if (rx_index < 7)  // Bounds check: stops the buffer overflowing
                 rxBuffer[rx_index++] = rx_char;
               break;
           }
